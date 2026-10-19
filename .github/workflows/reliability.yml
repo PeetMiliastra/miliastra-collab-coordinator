@@ -1,0 +1,23 @@
+name: PostgreSQL coordinator reliability
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - run: sudo apt-get update && sudo apt-get install --yes postgresql
+      - run: cargo build --locked
+      - name: Disposable database, real process restart and concurrent publications
+        run: python tests/reliability.py --binary target/debug/miliastra-service --pg-bin "$(pg_config --bindir)" --publications 52
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coordinator-reliability-summary
+          path: .tools/reliability-*/report.json

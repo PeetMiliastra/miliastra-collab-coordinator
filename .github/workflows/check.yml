@@ -1,0 +1,59 @@
+name: Coordinator service checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  service:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env: {POSTGRES_USER: collab, POSTGRES_PASSWORD: collab, POSTGRES_DB: collab}
+        ports: ['55432:5432']
+        options: --health-cmd "pg_isready -U collab" --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: actions/setup-node@v4
+        with: {node-version: '24'}
+      - name: Formatting
+        run: |
+          pip install ruff==0.13.3
+          python -m ruff format --check scripts tests
+          npx --yes prettier@3.9.10 --check "tests/**/*.cjs" crates/core/assets/invite.html
+      - run: python scripts/check-contract.py
+      - run: python -m unittest discover -s tests -p test_logo_metadata.py
+      - run: node tests/private-wire-codec.cjs
+      - run: cargo test --locked -p miliastra-core
+      - run: cargo test --locked
+      - run: cargo build --locked
+      - name: Metadata service integration
+        env:
+          DATABASE_URL: postgres://collab:collab@127.0.0.1:55432/collab
+          MCOLLAB_TEST_DATABASE_URL: postgres://collab:collab@127.0.0.1:55432/collab
+          PUBLIC_URL: http://127.0.0.1:18787
+          BIND_ADDR: 127.0.0.1:18787
+          PSQL: psql
+        run: |
+          target/debug/miliastra-service > service-test.log 2>&1 &
+          python - <<'PY'
+          import time, urllib.request
+          for attempt in range(60):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:18787/health', timeout=1)
+                  break
+              except OSError:
+                  time.sleep(0.5)
+          else:
+              raise RuntimeError('Coordinator did not start')
+          PY
+          python tests/service-integration.py
+      - name: Hosted invitation browser proof
+        run: |
+          npm install --no-save --prefix .tools/coordinator-browser playwright@1.64.1
+          node .tools/coordinator-browser/node_modules/playwright/cli.js install --with-deps chromium
+          export NODE_PATH="$PWD/.tools/coordinator-browser/node_modules"
+          export CHROME_PATH="$(node -p "require('playwright').chromium.executablePath()")"
+          node tests/invite-smoke.cjs
+      - name: Check standalone Docker build
+        run: docker build .

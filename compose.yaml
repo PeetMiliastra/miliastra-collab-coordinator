@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    logging:
+      driver: local
+      options:
+        max-size: "5m"
+        max-file: "3"
+    environment:
+      POSTGRES_DB: collab
+      POSTGRES_USER: collab
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes: ["database:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U collab"]
+      interval: 5s
+      retries: 10
+  service:
+    build: .
+    restart: unless-stopped
+    logging:
+      driver: local
+      options:
+        max-size: "5m"
+        max-file: "3"
+    environment:
+      DATABASE_URL: postgres://collab:${POSTGRES_PASSWORD}@postgres/collab
+      PUBLIC_URL: ${PUBLIC_URL:-http://127.0.0.1:8787}
+      BIND_ADDR: 0.0.0.0:8787
+      RUST_LOG: info
+    ports: ["127.0.0.1:8787:8787"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  database:

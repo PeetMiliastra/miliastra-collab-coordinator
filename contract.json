@@ -1,0 +1,13 @@
+{
+  "fingerprint": "de74aa82fdf277b6036d54fb98830286a7630708dbc257896de0593e59e89b93",
+  "files": [
+    "control.rs",
+    "decisions.rs",
+    "coordination.rs",
+    "constants.rs",
+    "errors.rs",
+    "model.rs",
+    "opaque.rs",
+    "presence.rs"
+  ]
+}

@@ -1,0 +1,14 @@
+**
+!Cargo.toml
+!Cargo.lock
+!src/
+!src/**
+!crates/
+!crates/core/
+!crates/core/**
+!migrations/
+!migrations/**
+**/target/
+**/.env*
+**/*.log
+**/__pycache__/

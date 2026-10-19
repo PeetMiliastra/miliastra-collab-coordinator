@@ -1,0 +1,25 @@
+[package]
+name = "miliastra-service"
+version = "0.1.36"
+edition = "2021"
+license = "MIT"
+[dependencies]
+miliastra-core = { path = "crates/core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1", features = ["full"] }
+axum = { version = "0.8", features = ["ws"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "json"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+reqwest_for_tests = { package = "reqwest", version = "0.12", default-features = false }
+
+# Versioned separately from the app.
+[workspace]
+members = [".", "crates/core"]
+resolver = "2"

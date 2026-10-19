@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="icon" type="image/png" href="../brand/logo.png" />
+    <title>Join a project · miliastra/collab</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f7f8f3;
+        color: #173c30;
+        font: 17px/1.6 system-ui;
+      }
+      main {
+        max-width: 570px;
+        margin: 10vh auto;
+        padding: 36px;
+        background: white;
+        border: 1px solid #dde5da;
+        border-radius: 22px;
+      }
+      h1 {
+        font-size: 32px;
+        line-height: 1.2;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 15px;
+        font-weight: 650;
+      }
+      .brand img {
+        width: 38px;
+        height: 38px;
+        object-fit: contain;
+      }
+      button,
+      .button {
+        display: inline-block;
+        background: #285d48;
+        border: 0;
+        color: white;
+        padding: 13px 20px;
+        border-radius: 9px;
+        font: inherit;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      button:disabled,
+      .button[aria-disabled="true"] {
+        opacity: 0.4;
+        cursor: default;
+      }
+      button.secondary {
+        background: #edf2eb;
+        color: #173c30;
+        font-size: 15px;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        border: 1px solid #ccd8ca;
+        border-radius: 8px;
+      }
+      small {
+        color: #64796b;
+      }
+      label {
+        display: block;
+        margin: 25px 0 8px;
+      }
+      details {
+        margin-top: 24px;
+      }
+      summary {
+        cursor: pointer;
+      }
+      #help {
+        margin: 16px 0;
+      }
+      button:focus-visible,
+      a:focus-visible,
+      input:focus-visible,
+      summary:focus-visible {
+        outline: 3px solid #82ab98;
+        outline-offset: 4px;
+      }
+      @media (max-width: 660px) {
+        main {
+          margin: 24px 12px;
+          padding: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">
+        <img src="../brand/logo.png" alt="" />miliastra/collab
+      </div>
+      <h1>Join project</h1>
+      <p id="status" role="status">Checking your invitation…</p>
+      <a id="open" class="button" role="button" aria-disabled="true"
+        >Open miliastra/collab</a
+      >
+      <p id="help" hidden>
+        Allow your browser to open the app. If nothing opens, launch
+        miliastra/collab once, then try again.
+      </p>
+      <details>
+        <summary>App didn’t open?</summary>
+        <p>
+          <a
+            href="https://miliastra.dev"
+            target="_blank"
+            rel="noreferrer noopener"
+            >Download miliastra/collab</a
+          >
+          from miliastra.dev, then open it once to enable invitation links.
+        </p>
+        <p>
+          After launching the app, return here and use Open miliastra/collab.
+        </p>
+        <label for="link">Your invitation link</label
+        ><input id="link" readonly />
+      </details>
+      <p>
+        <small
+          >Copy the Encryption Key from your teammate’s invitation message into
+          the desktop app. You also need access to the team’s storage
+          folder.</small
+        >
+      </p>
+    </main>
+    <script>
+      (() => {
+        const status = document.getElementById("status"),
+          open = document.getElementById("open"),
+          link = document.getElementById("link"),
+          help = document.getElementById("help");
+        let invitation,
+          generation = 0;
+        const uuid =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        async function check() {
+          const current = ++generation;
+          invitation = undefined;
+          open.setAttribute("aria-disabled", "true");
+          open.removeAttribute("href");
+          help.hidden = true;
+          link.value = location.href;
+          status.textContent = "Checking your invitation…";
+          try {
+            const match = location.pathname.match(/^(.*)\/invite\/([^/]+)$/),
+              secret = location.hash.slice(1);
+            if (
+              !match ||
+              location.search ||
+              !uuid.test(match[2]) ||
+              !uuid.test(secret)
+            )
+              throw Error(
+                "This link is incomplete. Ask the project owner for a new invitation.",
+              );
+            const endpoint = location.origin + match[1];
+            const response = await fetch(match[1] + "/invitations/resolve", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ project: match[2], invite: secret }),
+              credentials: "omit",
+              redirect: "error",
+            });
+            if (!response.ok)
+              throw Error(
+                "This invitation has expired or is invalid. Ask the project owner for a new link.",
+              );
+            const value = await response.json();
+            if (current !== generation) return;
+            if (
+              !value ||
+              typeof value.endpoint !== "string" ||
+              value.version !== 1 ||
+              value.project !== match[2] ||
+              value.invite !== secret ||
+              value.endpoint.replace(/\/$/, "") !== endpoint
+            )
+              throw Error(
+                "The invitation service returned an unexpected invitation. Ask the project owner for a new link.",
+              );
+            invitation = {
+              version: value.version,
+              endpoint: value.endpoint,
+              project: value.project,
+              invite: value.invite,
+            };
+            const protocol = new URL(
+              "miliastra-collab://invite/" + value.project,
+            );
+            protocol.searchParams.set("service", value.endpoint);
+            protocol.hash = value.invite;
+            open.href = protocol.href;
+            open.setAttribute("aria-disabled", "false");
+            status.textContent =
+              "Your invitation is ready. Open the app to choose your name and join.";
+          } catch (error) {
+            if (current === generation) status.textContent = error.message;
+          }
+        }
+        open.addEventListener("click", (event) => {
+          if (!invitation) {
+            event.preventDefault();
+            return;
+          }
+          help.hidden = false;
+        });
+        window.addEventListener("hashchange", check);
+        check();
+      })();
+    </script>
+  </body>
+</html>

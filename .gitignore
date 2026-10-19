@@ -1,0 +1,12 @@
+target/
+.tools/
+build/
+.env
+.env.*
+!.env.example
+node_modules/
+*.log
+__pycache__/
+backups/
+certs/
+.ruff_cache/
