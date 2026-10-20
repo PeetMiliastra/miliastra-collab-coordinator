@@ -4,7 +4,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FILES = [
     "control.rs",
-    "decisions.rs",
     "coordination.rs",
     "constants.rs",
     "errors.rs",

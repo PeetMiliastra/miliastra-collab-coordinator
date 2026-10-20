@@ -5,6 +5,7 @@ pub mod invitation_page;
 pub mod model;
 pub mod opaque;
 pub mod presence;
+pub mod presence_board;
 pub use model::*;
 pub fn hash(bytes: &[u8]) -> String {
     use sha2::{Digest, Sha256};
@@ -32,7 +33,6 @@ pub fn contract_fingerprint() -> &'static str {
     static VALUE: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
         let source = concat!(
             include_str!("control.rs"),
-            include_str!("decisions.rs"),
             include_str!("coordination.rs"),
             include_str!("constants.rs"),
             include_str!("errors.rs"),

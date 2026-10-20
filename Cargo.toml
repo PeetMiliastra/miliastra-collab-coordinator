@@ -2,7 +2,7 @@
 name = "miliastra-service"
 version = "0.1.36"
 edition = "2021"
-license = "MIT"
+license = "AGPL-3.0-or-later"
 [dependencies]
 miliastra-core = { path = "crates/core" }
 serde = { version = "1", features = ["derive"] }

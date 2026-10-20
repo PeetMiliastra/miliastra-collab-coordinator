@@ -1,8 +1,7 @@
 {
-  "fingerprint": "de74aa82fdf277b6036d54fb98830286a7630708dbc257896de0593e59e89b93",
+  "fingerprint": "b3bbae8fa0e620dd3cad766f8ae4e166bda7e7df3df8729b483c9f14065f492a",
   "files": [
     "control.rs",
-    "decisions.rs",
     "coordination.rs",
     "constants.rs",
     "errors.rs",

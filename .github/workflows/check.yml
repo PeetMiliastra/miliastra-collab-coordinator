@@ -23,6 +23,7 @@ jobs:
           npx --yes prettier@3.9.10 --check "tests/**/*.cjs" crates/core/assets/invite.html
       - run: python scripts/check-contract.py
       - run: python -m unittest discover -s tests -p test_logo_metadata.py
+      - run: python -m unittest discover -s tests -p test_interface_text.py
       - run: node tests/private-wire-codec.cjs
       - run: cargo test --locked -p miliastra-core
       - run: cargo test --locked

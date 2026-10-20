@@ -28,12 +28,14 @@ struct App {
     shutdown: tokio::sync::watch::Receiver<bool>,
     /// When each member last asked for each slice, to limit repeat requests.
     finish_requests: Arc<Mutex<HashMap<(String, String, String), Instant>>>,
-    presence: Arc<miliastra_core::presence::PresenceBoard>,
+    presence: Arc<miliastra_core::presence_board::PresenceBoard>,
 }
 const FINISH_REQUEST_INTERVAL: Duration = Duration::from_secs(60);
 /// Per-IP limits for requests without sign-in (create, join, invitation lookup).
 struct Limiter {
     trust_forwarded: bool,
+    /// Test runs only (DISABLE_RATE_LIMITS=1): many projects and joins from one address.
+    disabled: bool,
     windows: Mutex<HashMap<(&'static str, IpAddr), (Instant, u32)>>,
 }
 const LIMIT_WINDOW: Duration = Duration::from_secs(600);
@@ -56,6 +58,9 @@ impl Limiter {
             .unwrap_or(peer.ip())
     }
     fn check(&self, route: &'static str, ip: IpAddr, max: u32) -> Result<()> {
+        if self.disabled {
+            return Ok(());
+        }
         let now = Instant::now();
         let mut windows = self.windows.lock().unwrap();
         if windows.len() > 10_000 {
@@ -799,6 +804,7 @@ async fn main() -> anyhow::Result<()> {
         endpoint: std::env::var("PUBLIC_URL").unwrap_or_else(|_| "http://127.0.0.1:8787".into()),
         limits: Arc::new(Limiter {
             trust_forwarded: std::env::var("TRUST_FORWARDED_FOR").is_ok_and(|v| v == "1"),
+            disabled: std::env::var("DISABLE_RATE_LIMITS").is_ok_and(|v| v == "1"),
             windows: Mutex::new(HashMap::new()),
         }),
     };

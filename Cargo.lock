@@ -907,7 +907,6 @@ name = "miliastra-core"
 version = "0.1.36"
 dependencies = [
  "anyhow",
- "chrono",
  "serde",
  "serde_json",
  "sha2",

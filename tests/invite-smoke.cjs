@@ -35,7 +35,7 @@ const fs = require("node:fs");
   page.on("pageerror", (e) => errors.push(e.message));
   const link = base + "/invite/" + i.project + "#" + i.invite;
   await page.goto(link);
-  assert.equal(await page.title(), "Join a project · miliastra/collab");
+  assert.equal(await page.title(), "Join a project - miliastra/collab");
   await page.getByText("miliastra/collab", { exact: true }).waitFor();
   await page
     .getByRole("heading", { name: "Join project", exact: true })

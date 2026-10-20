@@ -6,6 +6,12 @@ import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# The app shows public/app-logo.png; the coordinator serves its core copy on invitation pages.
+LOGO = ROOT / (
+    "public/app-logo.png"
+    if (ROOT / "src-tauri").is_dir()
+    else "crates/core/assets/app-logo.png"
+)
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 RENDERING_CHUNKS = {b"IHDR", b"PLTE", b"tRNS", b"IDAT", b"IEND"}
 
@@ -41,20 +47,16 @@ class LogoMetadataTests(unittest.TestCase):
         self.assertTrue(zlib.decompress(b"".join(image_data)))
 
     def test_shipped_png_logos_have_only_rendering_chunks(self):
-        paths = [ROOT / "crates/core/assets/app-logo.png"]
+        paths = [LOGO]
         if (ROOT / "src-tauri").is_dir():
-            paths.append(ROOT / "public/app-logo.png")
             paths.extend(sorted((ROOT / "src-tauri/icons").glob("*.png")))
-            self.assertGreaterEqual(len(paths), 6)
+            self.assertGreaterEqual(len(paths), 5)
         for path in paths:
             with self.subTest(asset=str(path.relative_to(ROOT))):
                 self.assert_metadata_free_png(path.read_bytes())
-        public = ROOT / "public/app-logo.png"
-        if public.exists():
-            self.assertEqual(public.read_bytes(), paths[0].read_bytes())
 
-    def test_invitation_logo_keeps_its_expected_dimensions(self):
-        data = (ROOT / "crates/core/assets/app-logo.png").read_bytes()
+    def test_logo_keeps_its_expected_dimensions(self):
+        data = LOGO.read_bytes()
         self.assertEqual(data[12:16], b"IHDR")
         self.assertEqual(struct.unpack_from(">II", data, 16), (512, 512))
 
